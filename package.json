@@ -6,6 +6,9 @@
   "author": "Dat Bac Do <dat.b.do@gmail.com>",
   "license": "MIT",
   "private": false,
+  "engines": {
+    "node": "10.6.0"
+  },
   "scripts": {
     "start": "node index.js"
   },
