@@ -18,7 +18,7 @@ const configOptions = {
 console.log("Starting Cron Worker");
 
 new cron.CronJob(
-  "0 0 0 * * *",
+  "0 59 23 * * *",
   async () => {
     console.log("initiate updating fucks history");
     try {
