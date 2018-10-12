@@ -3,11 +3,8 @@ const axios = require("axios");
 const moment = require("moment");
 require("dotenv").config();
 
-const JSONSTORE_URL = `https://www.jsonstore.io/${process.env.JSON_STORE_KEY ||
-  "41d64a309ce2822eab6c2311dd679722d33417490c48177d869307f29ccd474c"}`;
-
-const CURRENT_FUCKS_GIVEN_KEY = "currentFucksGiven";
-const FUCK_GIVEN_HISTORY_KEY = "fucksHistory";
+const MYJSON_URL = `https://api.myjson.com/bins/${process.env
+  .VUE_APP_MY_JSON_KEY || "9qmh8"}`;
 
 const configOptions = {
   headers: {
@@ -17,47 +14,44 @@ const configOptions = {
 
 console.log("Starting Cron Worker");
 
+const getFucksData = async () => {
+  const response = await axios.get(MYJSON_URL, configOptions);
+  return response.data;
+};
+
+const setFucksData = async input => {
+  const response = await axios.put(MYJSON_URL, input, configOptions);
+  return response.data;
+};
+
 new cron.CronJob(
   "0 0 0 * * *",
   async () => {
     console.log("initiate updating fucks history");
     try {
       // get current fucks
-      const getMostRecentFucksResponse = await axios.get(
-        `${JSONSTORE_URL}/${CURRENT_FUCKS_GIVEN_KEY}`
-      );
-      const mostRecentFucksGivenAmount = getMostRecentFucksResponse.data.result
-        ? getMostRecentFucksResponse.data.result.amount
+      const fucksData = await getFucksData();
+      const mostRecentFucksGivenAmount = fucksData.currentFucksGiven
+        ? fucksData.currentFucksGiven.amount
         : 0;
       // add it to fucks history
-      const getMostRecentFucksHistoryResponse = await axios.get(
-        `${JSONSTORE_URL}/${FUCK_GIVEN_HISTORY_KEY}`
-      );
-      const mostRecentFucksHistoryResponse = getMostRecentFucksHistoryResponse
-        .data.result
-        ? getMostRecentFucksHistoryResponse.data.result.data
+      const mostRecentFucksHistoryData = fucksData.fucksHistory
+        ? fucksData.fucksHistory.data
         : [];
-      mostRecentFucksHistoryResponse.push({
+      mostRecentFucksHistoryData.push({
         timeframe: moment()
           .subtract(1, "days")
           .format("MM/DD/YYYY"),
         amount: mostRecentFucksGivenAmount
       });
-      await axios.put(
-        `${JSONSTORE_URL}/${FUCK_GIVEN_HISTORY_KEY}`,
-        {
-          data: mostRecentFucksHistoryResponse
-        },
-        configOptions
-      );
-      // reset fucks
-      await axios.post(
-        `${JSONSTORE_URL}/${CURRENT_FUCKS_GIVEN_KEY}`,
-        {
+      await setFucksData({
+        currentFucksGiven: {
           amount: 0
         },
-        configOptions
-      );
+        fucksHistory: {
+          data: mostRecentFucksHistoryData
+        }
+      });
     } catch (error) {
       console.error(error.message);
     }
